@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MoodRing</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: white;
+      min-width: 360px;
+      min-height: 500px;
+    }
+
+    .container {
+      padding: 24px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      color: #94a3b8;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .mood-display {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .mood-ring {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      background: conic-gradient(
+        from 0deg,
+        #4ade80 0deg,
+        #60a5fa 60deg,
+        #fbbf24 120deg,
+        #f87171 180deg,
+        #a78bfa 240deg,
+        #fb923c 300deg,
+        #4ade80 360deg
+      );
+      position: relative;
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    .mood-ring::before {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      background: #1a1a2e;
+      border-radius: 50%;
+    }
+
+    .mood-indicator {
+      position: absolute;
+      inset: 12px;
+      border-radius: 50%;
+      background: #4ade80;
+      transition: background 1s ease;
+      box-shadow: 0 0 30px currentColor;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+
+    .mood-label {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .mood-sublabel {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px 8px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 14px 20px;
+      border-radius: 12px;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .insights {
+      margin-top: 20px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      border-left: 3px solid #667eea;
+    }
+
+    .insights h3 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #e2e8f0;
+    }
+
+    .insights p {
+      font-size: 12px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 11px;
+      color: #475569;
+    }
+
+    .mood-history {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .mood-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      opacity: 0.3;
+    }
+
+    .mood-dot.active {
+      opacity: 1;
+      box-shadow: 0 0 8px currentColor;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>MoodRing</h1>
+      <p>Your browser's emotional intelligence</p>
+    </div>
+
+    <div class="mood-display">
+      <div class="mood-ring">
+        <div class="mood-indicator" id="moodIndicator"></div>
+      </div>
+      <div class="mood-label" id="moodLabel">Calm</div>
+      <div class="mood-sublabel" id="moodSublabel">You're browsing peacefully</div>
+      
+      <div class="mood-history" id="moodHistory">
+        <div class="mood-dot" style="background: #4ade80;"></div>
+        <div class="mood-dot" style="background: #4ade80;"></div>
+        <div class="mood-dot" style="background: #60a5fa;"></div>
+        <div class="mood-dot active" style="background: #4ade80;"></div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="tabCount">12</div>
+        <div class="stat-label">Tabs Open</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="sessionTime">45m</div>
+        <div class="stat-label">Session</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="switches">23</div>
+        <div class="stat-label">Switches</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="breatheBtn">
+        <span>🧘</span> Take a Breathing Break
+      </button>
+      <button class="btn btn-secondary" id="tabsBtn">
+        <span>🗂️</span> Close 5 Random Tabs
+      </button>
+    </div>
+
+    <div class="insights">
+      <h3>💡 Insight</h3>
+      <p id="insightText">You've been switching tabs frequently. Try focusing on one task for the next 15 minutes.</p>
+    </div>
+
+    <div class="footer">
+      MoodRing v0.1.0 • All data stays on your device
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
