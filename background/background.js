@@ -32,11 +32,11 @@ class MoodTracker {
       this.recordEvent('tab_switch', { tabId: info.tabId });
     });
 
-    // Track navigation
-    chrome.webNavigation.onCompleted.addListener((details) => {
-      if (details.frameId === 0) {
+    // Track navigation - use tabs.onUpdated instead of webNavigation
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+      if (changeInfo.status === 'complete' && tab.url) {
         this.recordEvent('page_load', { 
-          url: details.url,
+          url: tab.url,
           timestamp: Date.now()
         });
       }
