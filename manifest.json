@@ -17,7 +17,12 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content/presence-glow.js", "content/nudge-handler.js"],
+      "js": [
+        "content/presence-glow.js",
+        "content/nudge-handler.js",
+        "content/focus-timer.js",
+        "content/typing-indicator.js"
+      ],
       "css": ["content/presence-styles.css"],
       "run_at": "document_end"
     }
