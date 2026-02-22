@@ -1,224 +1,270 @@
-// MoodRing Background Service Worker
-// Handles pattern tracking, mood inference, and ambient interventions
+// SyncSpace - Background Script
+// Handles WebRTC signaling and connection state
 
-const MOOD_STATES = {
-  CALM: { color: '#4ade80', name: 'Calm' },
-  FOCUSED: { color: '#60a5fa', name: 'Focused' },
-  ANXIOUS: { color: '#fbbf24', name: 'Anxious' },
-  OVERWHELMED: { color: '#f87171', name: 'Overwhelmed' },
-  TIRED: { color: '#a78bfa', name: 'Tired' },
-  DOOMSCROLLING: { color: '#fb923c', name: 'Doomscrolling' }
+const SYNCSPACE_CONFIG = {
+  ICE_SERVERS: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+  ],
+  SIGNALING_SERVER: null // P2P only, no server needed for MVP
 };
 
-class MoodTracker {
+class SyncSpacePeer {
   constructor() {
-    this.patterns = new Map();
-    this.currentMood = 'CALM';
-    this.init();
+    this.connection = null;
+    this.dataChannel = null;
+    this.partnerId = null;
+    this.isOnline = false;
+    this.streak = 0;
+    this.lastSeen = null;
   }
 
-  init() {
-    // Set up periodic mood analysis
-    chrome.alarms.create('mood-analysis', { periodInMinutes: 1 });
-    chrome.alarms.create('gentle-check-in', { periodInMinutes: 15 });
+  async init() {
+    const stored = await chrome.storage.local.get(['partnerId', 'myId', 'streak', 'lastSeen']);
+    this.partnerId = stored.partnerId || null;
+    this.myId = stored.myId || this.generateId();
+    this.streak = stored.streak || 0;
+    this.lastSeen = stored.lastSeen || null;
     
-    this.setupEventListeners();
-    this.loadStoredPatterns();
+    if (!stored.myId) {
+      await chrome.storage.local.set({ myId: this.myId });
+    }
+
+    // Check if partner was recently online
+    if (this.lastSeen) {
+      const hoursSince = (Date.now() - this.lastSeen) / (1000 * 60 * 60);
+      if (hoursSince < 24) {
+        this.attemptReconnect();
+      }
+    }
   }
 
-  setupEventListeners() {
-    // Track tab switches
-    chrome.tabs.onActivated.addListener((info) => {
-      this.recordEvent('tab_switch', { tabId: info.tabId });
+  generateId() {
+    return Math.random().toString(36).substring(2, 10).toUpperCase();
+  }
+
+  generatePairingCode() {
+    // Simple 6-digit code for MVP
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  async createPairing() {
+    const code = this.generatePairingCode();
+    await chrome.storage.local.set({ 
+      pairingCode: code, 
+      pairingCreated: Date.now(),
+      myId: this.myId 
+    });
+    return code;
+  }
+
+  async joinPairing(code) {
+    // In real implementation, this would use a signaling server
+    // For MVP with zero cost, we'll use a simple approach:
+    // Store code -> ID mapping in chrome.storage.sync (limited but free)
+    // Both parties poll for connection
+    
+    await chrome.storage.sync.set({
+      [`pairing_${code}`]: {
+        peerId: this.myId,
+        timestamp: Date.now()
+      }
     });
 
-    // Track navigation - use tabs.onUpdated instead of webNavigation
-    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-      if (changeInfo.status === 'complete' && tab.url) {
-        this.recordEvent('page_load', { 
-          url: tab.url,
-          timestamp: Date.now()
+    // Start polling for partner
+    this.startPairingPoll(code);
+    return true;
+  }
+
+  async startPairingPoll(code) {
+    const pollInterval = setInterval(async () => {
+      const result = await chrome.storage.sync.get([`pairing_${code}`]);
+      const pairing = result[`pairing_${code}`];
+      
+      if (pairing && pairing.peerId !== this.myId) {
+        // Found partner!
+        clearInterval(pollInterval);
+        this.partnerId = pairing.peerId;
+        await chrome.storage.local.set({ partnerId: this.partnerId });
+        await chrome.storage.sync.remove(`pairing_${code}`);
+        this.initiateConnection();
+      }
+    }, 2000);
+
+    // Timeout after 5 minutes
+    setTimeout(() => clearInterval(pollInterval), 5 * 60 * 1000);
+  }
+
+  async initiateConnection() {
+    // Create WebRTC connection
+    this.connection = new RTCPeerConnection({
+      iceServers: SYNCSPACE_CONFIG.ICE_SERVERS
+    });
+
+    // Create data channel for presence
+    this.dataChannel = this.connection.createDataChannel('presence', {
+      ordered: true
+    });
+
+    this.setupDataChannel();
+    this.setupConnectionHandlers();
+
+    // Create offer
+    const offer = await this.connection.createOffer();
+    await this.connection.setLocalDescription(offer);
+
+    // Store offer for partner to find (using sync storage as signaling)
+    await chrome.storage.sync.set({
+      [`offer_${this.myId}`]: {
+        offer: offer,
+        timestamp: Date.now()
+      }
+    });
+
+    // Poll for answer
+    this.pollForAnswer();
+  }
+
+  setupDataChannel() {
+    this.dataChannel.onopen = () => {
+      this.isOnline = true;
+      this.broadcastPresence(true);
+      this.updateStreak();
+    };
+
+    this.dataChannel.onclose = () => {
+      this.isOnline = false;
+      this.broadcastPresence(false);
+    };
+
+    this.dataChannel.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      this.handleMessage(data);
+    };
+  }
+
+  setupConnectionHandlers() {
+    this.connection.onicecandidate = async (event) => {
+      if (event.candidate) {
+        await chrome.storage.sync.set({
+          [`ice_${this.myId}`]: event.candidate
         });
       }
-    });
-
-    // Alarm-based interventions
-    chrome.alarms.onAlarm.addListener((alarm) => {
-      if (alarm.name === 'mood-analysis') {
-        this.analyzeMood();
-      } else if (alarm.name === 'gentle-check-in') {
-        this.sendIntervention();
-      }
-    });
-
-    // Messages from content/popup
-    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-      if (msg.type === 'SCROLL_PATTERN') {
-        this.recordScrollPattern(msg.data);
-      } else if (msg.type === 'GET_MOOD') {
-        sendResponse({ mood: this.currentMood, patterns: this.getRecentPatterns() });
-      } else if (msg.type === 'MANUAL_BREATHING') {
-        this.triggerBreathingExercise();
-      }
-      return true;
-    });
-  }
-
-  recordEvent(type, data) {
-    const event = {
-      type,
-      timestamp: Date.now(),
-      ...data
     };
-    
-    // Store in local patterns (last 100 events)
-    const key = `events_${new Date().toISOString().split('T')[0]}`;
-    chrome.storage.local.get([key], (result) => {
-      const events = result[key] || [];
-      events.push(event);
-      if (events.length > 100) events.shift();
-      chrome.storage.local.set({ [key]: events });
-    });
 
-    this.detectRapidSwitching();
+    this.connection.ondatachannel = (event) => {
+      this.dataChannel = event.channel;
+      this.setupDataChannel();
+    };
   }
 
-  recordScrollPattern(data) {
-    const { velocity, direction, duration } = data;
-    
-    // Detect doom scrolling: fast, continuous, downward
-    if (velocity > 1000 && direction === 'down' && duration > 30000) {
-      this.updateMood('DOOMSCROLLING');
+  handleMessage(data) {
+    switch(data.type) {
+      case 'presence':
+        this.broadcastToTabs({ type: 'partnerPresence', online: data.online });
+        break;
+      case 'nudge':
+        this.broadcastToTabs({ type: 'nudgeReceived', timestamp: data.timestamp });
+        break;
+      case 'mood':
+        this.broadcastToTabs({ type: 'partnerMood', mood: data.mood });
+        break;
     }
   }
 
-  detectRapidSwitching() {
-    const now = Date.now();
-    const recentSwitches = this.getRecentEvents('tab_switch', 5000); // Last 5 seconds
-    
-    if (recentSwitches.length > 5) {
-      this.updateMood('ANXIOUS');
+  broadcastPresence(online) {
+    if (this.dataChannel?.readyState === 'open') {
+      this.dataChannel.send(JSON.stringify({ type: 'presence', online }));
     }
   }
 
-  analyzeMood() {
-    const patterns = this.getRecentPatterns();
-    const now = new Date();
-    
-    // Late night detection (11 PM - 5 AM)
-    if (now.getHours() >= 23 || now.getHours() <= 5) {
-      if (patterns.activityLevel > 0.7) {
-        this.updateMood('TIRED');
-      }
+  sendNudge() {
+    if (this.dataChannel?.readyState === 'open') {
+      this.dataChannel.send(JSON.stringify({ 
+        type: 'nudge', 
+        timestamp: Date.now() 
+      }));
+      return true;
     }
-
-    // Overwhelmed: many tabs, rapid context switching
-    chrome.tabs.query({}, (tabs) => {
-      if (tabs.length > 15 && this.getRecentEvents('tab_switch', 60000).length > 10) {
-        this.updateMood('OVERWHELMED');
-      }
-    });
-
-    // Focused: single tab, steady scrolling, long dwell time
-    const pageLoads = this.getRecentEvents('page_load', 300000); // 5 min
-    if (pageLoads.length === 1 && patterns.scrollVelocity < 200) {
-      this.updateMood('FOCUSED');
-    }
+    return false;
   }
 
-  updateMood(newMood) {
-    if (this.currentMood === newMood) return;
-    
-    this.currentMood = newMood;
-    const moodData = MOOD_STATES[newMood];
-    
-    // Broadcast to all tabs
+  broadcastToTabs(message) {
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach(tab => {
-        chrome.tabs.sendMessage(tab.id, {
-          type: 'MOOD_CHANGE',
-          mood: newMood,
-          color: moodData.color,
-          name: moodData.name
-        }).catch(() => {}); // Ignore errors for inactive tabs
+        chrome.tabs.sendMessage(tab.id, message).catch(() => {});
       });
     });
-
-    // Update extension icon
-    this.updateIcon(moodData.color);
   }
 
-  updateIcon(color) {
-    // Create colored circle icon
-    const canvas = new OffscreenCanvas(128, 128);
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(64, 64, 60, 0, 2 * Math.PI);
-    ctx.fill();
+  async updateStreak() {
+    const today = new Date().toDateString();
+    const lastStreakDate = await chrome.storage.local.get('lastStreakDate');
     
-    chrome.action.setIcon({ imageData: ctx.getImageData(0, 0, 128, 128) });
-  }
-
-  sendIntervention() {
-    const interventions = {
-      'ANXIOUS': { type: 'breathing', message: 'Take a moment. Breathe with me.' },
-      'OVERWHELMED': { type: 'tab-suggest', message: 'Close 5 tabs. Feel lighter.' },
-      'TIRED': { type: 'sleep-nudge', message: 'It\'s late. Your mind needs rest.' },
-      'DOOMSCROLLING': { type: 'pattern-break', message: 'Endless scroll detected. Try a walk?' }
-    };
-
-    const intervention = interventions[this.currentMood];
-    if (intervention) {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]) {
-          chrome.tabs.sendMessage(tabs[0].id, {
-            type: 'INTERVENTION',
-            ...intervention
-          }).catch(() => {});
-        }
+    if (lastStreakDate.lastStreakDate !== today) {
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      
+      if (lastStreakDate.lastStreakDate === yesterday) {
+        this.streak++;
+      } else {
+        this.streak = 1;
+      }
+      
+      await chrome.storage.local.set({
+        streak: this.streak,
+        lastStreakDate: today
       });
     }
   }
 
-  triggerBreathingExercise() {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          type: 'BREATHING_EXERCISE'
-        }).catch(() => {});
+  async attemptReconnect() {
+    // Simple reconnection logic
+    if (this.partnerId) {
+      // Try to find partner's offer
+      const result = await chrome.storage.sync.get([`offer_${this.partnerId}`]);
+      if (result[`offer_${this.partnerId}`]) {
+        // Partner is trying to connect, join them
+        this.acceptConnection(result[`offer_${this.partnerId}`]);
       }
-    });
+    }
   }
 
-  loadStoredPatterns() {
-    chrome.storage.local.get(['currentMood'], (result) => {
-      if (result.currentMood) {
-        this.currentMood = result.currentMood;
-      }
-    });
-  }
-
-  getRecentPatterns() {
-    // Placeholder - would calculate from stored events
-    return {
-      activityLevel: 0.5,
-      scrollVelocity: 300,
-      tabCount: 0
-    };
-  }
-
-  getRecentEvents(type, timeWindow) {
-    // Placeholder - would filter from storage
-    return [];
+  async disconnect() {
+    if (this.dataChannel) this.dataChannel.close();
+    if (this.connection) this.connection.close();
+    this.isOnline = false;
+    this.partnerId = null;
+    await chrome.storage.local.remove(['partnerId']);
   }
 }
 
 // Initialize
-const moodTracker = new MoodTracker();
+const syncSpace = new SyncSpacePeer();
+syncSpace.init();
 
-// Store mood state for persistence
-chrome.storage.local.set({ 
-  version: '0.1.0',
-  installDate: Date.now()
+// Listen for messages from popup/content
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  switch(request.action) {
+    case 'getStatus':
+      sendResponse({
+        myId: syncSpace.myId,
+        partnerId: syncSpace.partnerId,
+        isOnline: syncSpace.isOnline,
+        streak: syncSpace.streak
+      });
+      break;
+    case 'createPairing':
+      syncSpace.createPairing().then(code => sendResponse({ code }));
+      return true;
+    case 'joinPairing':
+      syncSpace.joinPairing(request.code).then(success => sendResponse({ success }));
+      return true;
+    case 'sendNudge':
+      const sent = syncSpace.sendNudge();
+      sendResponse({ sent });
+      break;
+    case 'disconnect':
+      syncSpace.disconnect().then(() => sendResponse({ success: true }));
+      return true;
+  }
 });

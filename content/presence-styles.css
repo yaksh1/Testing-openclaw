@@ -1,0 +1,167 @@
+/* SyncSpace - Presence Glow Styles */
+
+.syncspace-glow {
+  position: fixed;
+  pointer-events: none;
+  z-index: 2147483646;
+  transition: all 0.8s ease-out;
+}
+
+/* Top glow bar */
+.syncspace-glow-top {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, 
+    transparent 0%,
+    rgba(99, 102, 241, 0.3) 20%,
+    rgba(168, 85, 247, 0.5) 50%,
+    rgba(99, 102, 241, 0.3) 80%,
+    transparent 100%
+  );
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.syncspace-glow-top.active {
+  opacity: 1;
+  transform: translateY(0);
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+/* Corner orbs */
+.syncspace-orb {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.syncspace-orb.top-right {
+  top: -40px;
+  right: -40px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, transparent 70%);
+}
+
+.syncspace-orb.bottom-left {
+  bottom: -40px;
+  left: -40px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%);
+}
+
+.syncspace-orb.active {
+  opacity: 1;
+  animation: orbBreathe 4s ease-in-out infinite;
+}
+
+/* Nudge animation overlay */
+.syncspace-nudge {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+}
+
+.syncspace-nudge.active {
+  animation: nudgeRipple 2s ease-out;
+}
+
+.syncspace-nudge-ring {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 3px solid rgba(168, 85, 247, 0.6);
+  position: absolute;
+}
+
+.syncspace-nudge-heart {
+  font-size: 48px;
+  animation: heartBeat 0.6s ease-in-out;
+}
+
+/* Sync mode overlay */
+.syncspace-sync-mode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 2147483645;
+  background: radial-gradient(ellipse at center, 
+    rgba(99, 102, 241, 0.03) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+
+.syncspace-sync-mode.active {
+  opacity: 1;
+}
+
+/* Animations */
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes orbBreathe {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% { 
+    transform: scale(1.1);
+    opacity: 0.6;
+  }
+}
+
+@keyframes nudgeRipple {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes heartBeat {
+  0% { transform: scale(0.5); opacity: 0; }
+  25% { transform: scale(1.2); opacity: 1; }
+  50% { transform: scale(0.9); }
+  75% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+/* Connection status indicator (subtle corner dot) */
+.syncspace-status {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 2147483646;
+}
+
+.syncspace-status.online {
+  opacity: 0.6;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}

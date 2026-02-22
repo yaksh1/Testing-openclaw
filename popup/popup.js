@@ -1,101 +1,173 @@
-// MoodRing Popup Script
+// SyncSpace Popup
+// Handles UI interactions and state management
 
-document.addEventListener('DOMContentLoaded', () => {
-  const moodIndicator = document.getElementById('moodIndicator');
-  const moodLabel = document.getElementById('moodLabel');
-  const moodSublabel = document.getElementById('moodSublabel');
-  const tabCount = document.getElementById('tabCount');
-  const sessionTime = document.getElementById('sessionTime');
-  const switches = document.getElementById('switches');
-  const insightText = document.getElementById('insightText');
-  const breatheBtn = document.getElementById('breatheBtn');
-  const tabsBtn = document.getElementById('tabsBtn');
+document.addEventListener('DOMContentLoaded', async () => {
+  // State
+  let currentState = 'not-connected'; // not-connected, creating-code, entering-code, connected
+  let partnerOnline = false;
 
-  const MOOD_DATA = {
-    'CALM': { color: '#4ade80', label: 'Calm', sublabel: 'You\'re browsing peacefully' },
-    'FOCUSED': { color: '#60a5fa', label: 'Focused', sublabel: 'Deep work mode activated' },
-    'ANXIOUS': { color: '#fbbf24', label: 'Anxious', sublabel: 'Rapid tab switching detected' },
-    'OVERWHELMED': { color: '#f87171', label: 'Overwhelmed', sublabel: 'Many tabs, scattered attention' },
-    'TIRED': { color: '#a78bfa', label: 'Tired', sublabel: 'Late night browsing' },
-    'DOOMSCROLLING': { color: '#fb923c', label: 'Doomscrolling', sublabel: 'Endless feed consumption' }
+  // Elements
+  const views = {
+    notConnected: document.getElementById('not-connected'),
+    creatingCode: document.getElementById('creating-code'),
+    enteringCode: document.getElementById('entering-code'),
+    connected: document.getElementById('connected')
   };
 
-  const INSIGHTS = {
-    'CALM': 'You\'re in a good flow. This is a great time for deep work.',
-    'FOCUSED': 'You\'ve been on this page for a while. You\'re in deep focus.',
-    'ANXIOUS': 'Try the breathing exercise. Close your eyes for 30 seconds.',
-    'OVERWHELMED': 'Consider closing some tabs. Focus on one thing at a time.',
-    'TIRED': 'It\'s getting late. Your brain needs rest to process information.',
-    'DOOMSCROLLING': 'You\'ve been scrolling for a while. Try standing up and stretching.'
+  const buttons = {
+    create: document.getElementById('btn-create'),
+    join: document.getElementById('btn-join'),
+    cancelCreate: document.getElementById('btn-cancel-create'),
+    cancelJoin: document.getElementById('btn-cancel-join'),
+    connect: document.getElementById('btn-connect'),
+    nudge: document.getElementById('btn-nudge'),
+    disconnect: document.getElementById('btn-disconnect')
   };
 
-  // Get current mood from background
-  chrome.runtime.sendMessage({ type: 'GET_MOOD' }, (response) => {
-    if (response) {
-      updateMoodDisplay(response.mood);
+  const displays = {
+    pairingCode: document.getElementById('pairing-code'),
+    codeInput: document.getElementById('code-input'),
+    partnerDot: document.getElementById('partner-dot'),
+    partnerStatus: document.getElementById('partner-status'),
+    streak: document.getElementById('streak-display'),
+    streakLabel: document.getElementById('streak-label')
+  };
+
+  // Initialize
+  await loadStatus();
+
+  // Event Listeners
+  buttons.create.addEventListener('click', createPairing);
+  buttons.join.addEventListener('click', () => switchView('entering-code'));
+  buttons.cancelCreate.addEventListener('click', () => switchView('not-connected'));
+  buttons.cancelJoin.addEventListener('click', () => switchView('not-connected'));
+  buttons.connect.addEventListener('click', joinPairing);
+  buttons.nudge.addEventListener('click', sendNudge);
+  buttons.disconnect.addEventListener('click', disconnect);
+
+  displays.codeInput.addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+  });
+
+  // Functions
+  async function loadStatus() {
+    const response = await chrome.runtime.sendMessage({ action: 'getStatus' });
+    
+    if (response.partnerId) {
+      currentState = 'connected';
+      partnerOnline = response.isOnline;
+      updateConnectedView(response);
+    } else {
+      currentState = 'not-connected';
     }
-  });
-
-  // Get tab count
-  chrome.tabs.query({}, (tabs) => {
-    tabCount.textContent = tabs.length;
-  });
-
-  // Update display
-  function updateMoodDisplay(mood) {
-    const data = MOOD_DATA[mood] || MOOD_DATA['CALM'];
-    moodIndicator.style.background = data.color;
-    moodIndicator.style.boxShadow = `0 0 30px ${data.color}`;
-    moodLabel.textContent = data.label;
-    moodSublabel.textContent = data.sublabel;
-    insightText.textContent = INSIGHTS[mood] || INSIGHTS['CALM'];
+    
+    switchView(currentState);
   }
 
-  // Breathing button
-  breatheBtn.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ type: 'MANUAL_BREATHING' });
-    window.close();
-  });
+  function switchView(viewName) {
+    Object.values(views).forEach(el => el.classList.add('hidden'));
+    views[viewName === 'creating-code' ? 'creatingCode' : 
+          viewName === 'entering-code' ? 'enteringCode' : 
+          viewName === 'connected' ? 'connected' : 'notConnected'].classList.remove('hidden');
+    currentState = viewName;
+  }
 
-  // Close tabs button
-  tabsBtn.addEventListener('click', () => {
-    chrome.tabs.query({}, (tabs) => {
-      if (tabs.length > 5) {
-        // Close 5 random non-active tabs
-        const nonActiveTabs = tabs.filter(t => !t.active);
-        const toClose = nonActiveTabs
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 5);
-        
-        toClose.forEach(tab => {
-          chrome.tabs.remove(tab.id);
-        });
-
-        tabCount.textContent = tabs.length - toClose.length;
-        tabsBtn.innerHTML = '<span>✅</span> Closed 5 tabs';
-        setTimeout(() => {
-          tabsBtn.innerHTML = '<span>🗂️</span> Close 5 Random Tabs';
-        }, 2000);
-      } else {
-        tabsBtn.innerHTML = '<span>ℹ️</span> Not enough tabs';
-        setTimeout(() => {
-          tabsBtn.innerHTML = '<span>🗂️</span> Close 5 Random Tabs';
-        }, 2000);
-      }
-    });
-  });
-
-  // Update session time
-  chrome.storage.local.get(['sessionStart'], (result) => {
-    const start = result.sessionStart || Date.now();
-    const elapsed = Math.floor((Date.now() - start) / 60000);
+  async function createPairing() {
+    switchView('creating-code');
     
-    if (elapsed < 60) {
-      sessionTime.textContent = `${elapsed}m`;
+    const response = await chrome.runtime.sendMessage({ action: 'createPairing' });
+    displays.pairingCode.textContent = response.code;
+
+    // Poll for connection
+    pollForConnection();
+  }
+
+  async function joinPairing() {
+    const code = displays.codeInput.value;
+    if (code.length !== 6) {
+      alert('Please enter a 6-digit code');
+      return;
+    }
+
+    buttons.connect.disabled = true;
+    buttons.connect.textContent = 'Connecting...';
+
+    const response = await chrome.runtime.sendMessage({ action: 'joinPairing', code });
+
+    if (response.success) {
+      switchView('connected');
+      pollForConnection();
     } else {
-      const hours = Math.floor(elapsed / 60);
-      const mins = elapsed % 60;
-      sessionTime.textContent = `${hours}h ${mins}m`;
+      alert('Could not connect. Please check the code and try again.');
+      buttons.connect.disabled = false;
+      buttons.connect.textContent = 'Connect';
+    }
+  }
+
+  function pollForConnection() {
+    const interval = setInterval(async () => {
+      const status = await chrome.runtime.sendMessage({ action: 'getStatus' });
+      
+      if (status.isOnline) {
+        clearInterval(interval);
+        partnerOnline = true;
+        updateConnectedView(status);
+        switchView('connected');
+      }
+    }, 1000);
+
+    // Stop polling after 5 minutes
+    setTimeout(() => clearInterval(interval), 5 * 60 * 1000);
+  }
+
+  function updateConnectedView(status) {
+    if (status.isOnline) {
+      displays.partnerDot.classList.remove('offline');
+      displays.partnerStatus.textContent = 'Partner online';
+      buttons.nudge.disabled = false;
+    } else {
+      displays.partnerDot.classList.add('offline');
+      displays.partnerStatus.textContent = 'Partner offline';
+      buttons.nudge.disabled = true;
+    }
+
+    if (status.streak > 0) {
+      displays.streak.textContent = status.streak;
+      displays.streak.classList.remove('hidden');
+      displays.streakLabel.classList.remove('hidden');
+    }
+  }
+
+  async function sendNudge() {
+    const response = await chrome.runtime.sendMessage({ action: 'sendNudge' });
+    
+    if (response.sent) {
+      buttons.nudge.textContent = '💜 Sent!';
+      setTimeout(() => {
+        buttons.nudge.textContent = '💜 Send Nudge';
+      }, 2000);
+    } else {
+      buttons.nudge.textContent = '❌ Failed';
+      setTimeout(() => {
+        buttons.nudge.textContent = '💜 Send Nudge';
+      }, 2000);
+    }
+  }
+
+  async function disconnect() {
+    if (confirm('Disconnect from your partner?')) {
+      await chrome.runtime.sendMessage({ action: 'disconnect' });
+      switchView('not-connected');
+    }
+  }
+
+  // Listen for status updates
+  chrome.runtime.onMessage.addListener((request) => {
+    if (request.type === 'partnerPresence') {
+      partnerOnline = request.online;
+      if (currentState === 'connected') {
+        chrome.runtime.sendMessage({ action: 'getStatus' }, updateConnectedView);
+      }
     }
   });
 });

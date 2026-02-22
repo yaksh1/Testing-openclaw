@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MoodRing</title>
+  <title>SyncSpace</title>
   <style>
     * {
       margin: 0;
@@ -12,14 +12,10 @@
     }
 
     body {
+      width: 320px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      min-width: 360px;
-      min-height: 500px;
-    }
-
-    .container {
       padding: 24px;
     }
 
@@ -31,250 +27,225 @@
     .header h1 {
       font-size: 24px;
       font-weight: 600;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .header p {
-      color: #94a3b8;
-      font-size: 13px;
-      margin-top: 4px;
-    }
-
-    .mood-display {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 20px;
-      padding: 24px;
-      margin-bottom: 20px;
-      text-align: center;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .mood-ring {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      margin: 0 auto 16px;
-      background: conic-gradient(
-        from 0deg,
-        #4ade80 0deg,
-        #60a5fa 60deg,
-        #fbbf24 120deg,
-        #f87171 180deg,
-        #a78bfa 240deg,
-        #fb923c 300deg,
-        #4ade80 360deg
-      );
-      position: relative;
-      animation: pulse 3s ease-in-out infinite;
-    }
-
-    .mood-ring::before {
-      content: '';
-      position: absolute;
-      inset: 8px;
-      background: #1a1a2e;
-      border-radius: 50%;
-    }
-
-    .mood-indicator {
-      position: absolute;
-      inset: 12px;
-      border-radius: 50%;
-      background: #4ade80;
-      transition: background 1s ease;
-      box-shadow: 0 0 30px currentColor;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.02); }
-    }
-
-    .mood-label {
-      font-size: 20px;
-      font-weight: 600;
       margin-bottom: 4px;
     }
 
-    .mood-sublabel {
+    .header p {
       font-size: 13px;
-      color: #94a3b8;
+      opacity: 0.9;
     }
 
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .stat-card {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 16px 8px;
+    .status-card {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
       text-align: center;
-      border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .stat-value {
-      font-size: 24px;
-      font-weight: 700;
-      color: #fff;
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
     }
 
-    .stat-label {
-      font-size: 11px;
-      color: #64748b;
-      margin-top: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse 2s infinite;
     }
 
-    .actions {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    .status-dot.offline {
+      background: #6b7280;
+      animation: none;
     }
 
-    .btn {
-      padding: 14px 20px;
-      border-radius: 12px;
-      border: none;
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.1); }
+    }
+
+    .status-text {
       font-size: 14px;
       font-weight: 500;
+    }
+
+    .streak {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 8px 0;
+    }
+
+    .streak-label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      margin-bottom: 12px;
     }
 
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    .action-btn.primary {
+      background: white;
+      color: #764ba2;
+    }
+
+    .action-btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .action-btn.secondary {
+      background: rgba(255, 255, 255, 0.2);
       color: white;
     }
 
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    .action-btn.secondary:hover {
+      background: rgba(255, 255, 255, 0.3);
     }
 
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+    .action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
     }
 
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    .insights {
-      margin-top: 20px;
+    .code-display {
+      background: rgba(0, 0, 0, 0.2);
       padding: 16px;
-      background: rgba(255, 255, 255, 0.03);
       border-radius: 12px;
-      border-left: 3px solid #667eea;
+      text-align: center;
+      margin: 16px 0;
     }
 
-    .insights h3 {
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: #e2e8f0;
+    .code {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      font-family: monospace;
     }
 
-    .insights p {
+    .code-label {
+      font-size: 11px;
+      opacity: 0.7;
+      margin-top: 4px;
+    }
+
+    .input-group {
+      margin-bottom: 12px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+
+    .input-group input::placeholder {
+      color: #9ca3af;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .info-text {
       font-size: 12px;
-      color: #94a3b8;
+      opacity: 0.8;
+      text-align: center;
+      margin-top: 16px;
       line-height: 1.5;
     }
 
-    .footer {
-      margin-top: 20px;
+    .disconnect-link {
+      display: block;
       text-align: center;
-      font-size: 11px;
-      color: #475569;
-    }
-
-    .mood-history {
-      display: flex;
-      gap: 6px;
-      justify-content: center;
+      font-size: 12px;
+      opacity: 0.6;
       margin-top: 16px;
+      cursor: pointer;
     }
 
-    .mood-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      opacity: 0.3;
-    }
-
-    .mood-dot.active {
+    .disconnect-link:hover {
       opacity: 1;
-      box-shadow: 0 0 8px currentColor;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>MoodRing</h1>
-      <p>Your browser's emotional intelligence</p>
+  <div class="header">
+    <h1>💜 SyncSpace</h1>
+    <p>Browse together, even when apart</p>
+  </div>
+
+  <!-- Not Connected State -->
+  <div id="not-connected" class="hidden">
+    <div class="status-card">
+      <p style="margin-bottom: 12px;">Not connected yet</p>
+      <p class="info-text">Share a code with your partner to start browsing together</p>
     </div>
 
-    <div class="mood-display">
-      <div class="mood-ring">
-        <div class="mood-indicator" id="moodIndicator"></div>
-      </div>
-      <div class="mood-label" id="moodLabel">Calm</div>
-      <div class="mood-sublabel" id="moodSublabel">You're browsing peacefully</div>
-      
-      <div class="mood-history" id="moodHistory">
-        <div class="mood-dot" style="background: #4ade80;"></div>
-        <div class="mood-dot" style="background: #4ade80;"></div>
-        <div class="mood-dot" style="background: #60a5fa;"></div>
-        <div class="mood-dot active" style="background: #4ade80;"></div>
-      </div>
+    <button id="btn-create" class="action-btn primary">Generate Code</button>
+    <button id="btn-join" class="action-btn secondary">Enter Code</button>
+  </div>
+
+  <!-- Create Code State -->
+  <div id="creating-code" class="hidden">
+    <div class="code-display">
+      <div id="pairing-code" class="code">------</div>
+      <div class="code-label">Share this code with your partner</div>
     </div>
 
-    <div class="stats">
-      <div class="stat-card">
-        <div class="stat-value" id="tabCount">12</div>
-        <div class="stat-label">Tabs Open</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="sessionTime">45m</div>
-        <div class="stat-label">Session</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="switches">23</div>
-        <div class="stat-label">Switches</div>
-      </div>
+    <p class="info-text">Waiting for them to connect... Keep this window open</p>
+
+    <button id="btn-cancel-create" class="action-btn secondary">Cancel</button>
+  </div>
+
+  <!-- Enter Code State -->
+  <div id="entering-code" class="hidden">
+    <div class="input-group">
+      <input type="text" id="code-input" placeholder="000000" maxlength="6" inputmode="numeric">
     </div>
 
-    <div class="actions">
-      <button class="btn btn-primary" id="breatheBtn">
-        <span>🧘</span> Take a Breathing Break
-      </button>
-      <button class="btn btn-secondary" id="tabsBtn">
-        <span>🗂️</span> Close 5 Random Tabs
-      </button>
+    <button id="btn-connect" class="action-btn primary">Connect</button>
+    <button id="btn-cancel-join" class="action-btn secondary">Back</button>
+  </div>
+
+  <!-- Connected State -->
+  <div id="connected" class="hidden">
+    <div class="status-card">
+      <div class="status-indicator">
+        <div id="partner-dot" class="status-dot offline"></div>
+        <span id="partner-status" class="status-text">Partner offline</span>
+      </div>
+      <div id="streak-display" class="streak hidden">0</div>
+      <div id="streak-label" class="streak-label hidden">day streak 🔥</div>
     </div>
 
-    <div class="insights">
-      <h3>💡 Insight</h3>
-      <p id="insightText">You've been switching tabs frequently. Try focusing on one task for the next 15 minutes.</p>
-    </div>
+    <button id="btn-nudge" class="action-btn primary" disabled>
+      💜 Send Nudge
+    </button>
 
-    <div class="footer">
-      MoodRing v0.1.0 • All data stays on your device
-    </div>
+    <p class="info-text">
+      Double-click the extension icon anytime to send a nudge
+    </p>
+
+    <span id="btn-disconnect" class="disconnect-link">Disconnect</span>
   </div>
 
   <script src="popup.js"></script>

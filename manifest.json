@@ -1,13 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "MoodRing",
+  "name": "SyncSpace",
   "version": "0.1.0",
-  "description": "An ambient browser companion that senses your emotional state and responds with subtle, calming interventions",
+  "description": "Shared browsing presence for couples and friends. Feel together, even when apart.",
   "permissions": [
     "storage",
     "tabs",
-    "activeTab",
-    "alarms"
+    "activeTab"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -18,8 +17,8 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content/mood-detector.js", "content/ambient-overlay.js"],
-      "css": ["content/ambient-styles.css"],
+      "js": ["content/presence-glow.js", "content/nudge-handler.js"],
+      "css": ["content/presence-styles.css"],
       "run_at": "document_end"
     }
   ],
@@ -35,11 +34,5 @@
     "16": "assets/icon16.png",
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
-  },
-  "web_accessible_resources": [
-    {
-      "resources": ["assets/*", "models/*"],
-      "matches": ["<all_urls>"]
-    }
-  ]
+  }
 }
