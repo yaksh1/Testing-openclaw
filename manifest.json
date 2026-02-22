@@ -21,7 +21,9 @@
         "content/presence-glow.js",
         "content/nudge-handler.js",
         "content/focus-timer.js",
-        "content/typing-indicator.js"
+        "content/typing-indicator.js",
+        "content/playlist.js",
+        "content/custom-nudges.js"
       ],
       "css": ["content/presence-styles.css"],
       "run_at": "document_end"

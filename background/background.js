@@ -253,6 +253,12 @@ class SyncSpacePeer {
       case 'typing':
         this.broadcastToTabs({ type: 'partnerTyping', typing: data.typing });
         break;
+      case 'playlist':
+        this.broadcastToTabs({ type: 'partnerPlaylistUpdate', state: data.state });
+        break;
+      case 'customNudge':
+        this.broadcastToTabs({ type: 'customNudgeReceived', nudge: data.nudge });
+        break;
       case 'mood':
         this.broadcastToTabs({ type: 'partnerMood', mood: data.mood });
         break;
@@ -362,6 +368,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           syncSpace.dataChannel.send(JSON.stringify({ type: 'typing', typing: request.typing }));
         }
         return { sent: true };
+      case 'broadcastPlaylist':
+        if (syncSpace.dataChannel?.readyState === 'open') {
+          syncSpace.dataChannel.send(JSON.stringify({ type: 'playlist', state: request.state }));
+        }
+        return { sent: true };
+      case 'sendCustomNudge':
+        if (syncSpace.dataChannel?.readyState === 'open') {
+          syncSpace.dataChannel.send(JSON.stringify({ type: 'customNudge', nudge: request.nudge }));
+          return { sent: true };
+        }
+        return { sent: false };
       case 'toggleFocusTimer':
         syncSpace.broadcastToTabs({ type: 'toggleFocusTimer' });
         return { success: true };
