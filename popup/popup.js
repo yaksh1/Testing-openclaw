@@ -44,6 +44,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   buttons.connect.addEventListener('click', joinPairing);
   buttons.nudge.addEventListener('click', sendNudge);
   buttons.disconnect.addEventListener('click', disconnect);
+  
+  // New feature buttons
+  document.getElementById('btn-timer')?.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ action: 'toggleFocusTimer' });
+    window.close();
+  });
+  
+  document.getElementById('btn-playlist')?.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ action: 'togglePlaylist' });
+    window.close();
+  });
+  
+  document.getElementById('btn-settings')?.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ action: 'toggleSettings' });
+    window.close();
+  });
 
   displays.codeInput.addEventListener('input', (e) => {
     e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);

@@ -1,10 +1,10 @@
-/* SyncSpace - Presence Glow Styles */
+/* SyncSpace - Presence Glow Styles - Enhanced with better animations */
 
 .syncspace-glow {
   position: fixed;
   pointer-events: none;
   z-index: 2147483646;
-  transition: all 0.8s ease-out;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Top glow bar */
@@ -30,14 +30,14 @@
   animation: glowPulse 3s ease-in-out infinite;
 }
 
-/* Corner orbs */
+/* Corner orbs with enhanced animations */
 .syncspace-orb {
   width: 120px;
   height: 120px;
   border-radius: 50%;
   filter: blur(60px);
   opacity: 0;
-  transition: opacity 1s ease;
+  transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .syncspace-orb.top-right {
@@ -57,7 +57,7 @@
   animation: orbBreathe 4s ease-in-out infinite;
 }
 
-/* Nudge animation overlay */
+/* Nudge animation overlay - Enhanced */
 .syncspace-nudge {
   position: fixed;
   top: 0;
@@ -73,7 +73,7 @@
 }
 
 .syncspace-nudge.active {
-  animation: nudgeRipple 2s ease-out;
+  animation: nudgeRipple 2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .syncspace-nudge-ring {
@@ -82,6 +82,7 @@
   border-radius: 50%;
   border: 3px solid rgba(168, 85, 247, 0.6);
   position: absolute;
+  animation: ringExpand 2s ease-out;
 }
 
 .syncspace-nudge-heart {
@@ -110,20 +111,32 @@
   opacity: 1;
 }
 
-/* Animations */
+/* Enhanced Animations */
 @keyframes glowPulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+  0%, 100% { 
+    opacity: 0.6;
+    filter: brightness(1);
+  }
+  50% { 
+    opacity: 1;
+    filter: brightness(1.2);
+  }
 }
 
 @keyframes orbBreathe {
   0%, 100% { 
-    transform: scale(1);
+    transform: scale(1) rotate(0deg);
     opacity: 0.4;
   }
+  25% {
+    transform: scale(1.05) rotate(2deg);
+  }
   50% { 
-    transform: scale(1.1);
+    transform: scale(1.1) rotate(0deg);
     opacity: 0.6;
+  }
+  75% {
+    transform: scale(1.05) rotate(-2deg);
   }
 }
 
@@ -134,15 +147,26 @@
   100% { opacity: 0; }
 }
 
+@keyframes ringExpand {
+  0% { 
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  100% { 
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
 @keyframes heartBeat {
   0% { transform: scale(0.5); opacity: 0; }
-  25% { transform: scale(1.2); opacity: 1; }
+  25% { transform: scale(1.3); opacity: 1; }
   50% { transform: scale(0.9); }
-  75% { transform: scale(1.1); }
+  75% { transform: scale(1.15); }
   100% { transform: scale(1); opacity: 0; }
 }
 
-/* Connection status indicator (subtle corner dot) */
+/* Connection status indicator */
 .syncspace-status {
   position: fixed;
   bottom: 20px;
@@ -152,7 +176,7 @@
   border-radius: 50%;
   background: #10b981;
   opacity: 0;
-  transition: opacity 0.5s ease;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 2147483646;
 }
 
@@ -162,6 +186,91 @@
 }
 
 @keyframes statusPulse {
-  0%, 100% { transform: scale(1); opacity: 0.6; }
-  50% { transform: scale(1.2); opacity: 0.8; }
+  0%, 100% { transform: scale(1); opacity: 0.6; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { transform: scale(1.2); opacity: 0.8; box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+}
+
+/* Smooth transitions for all SyncSpace UI elements */
+.syncspace-timer,
+.syncspace-playlist,
+.syncspace-nudge-picker,
+.syncspace-settings {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.3s ease,
+              color 0.3s ease;
+}
+
+/* Hover lift effect for interactive elements */
+.syncspace-timer-header,
+.syncspace-playlist-header,
+.syncspace-nudge-picker-header,
+.syncspace-settings-header {
+  transition: background-color 0.2s ease;
+}
+
+/* Button hover animations */
+.syncspace-timer-btn,
+.syncspace-playlist-btn,
+.syncspace-nudge-picker-item,
+.syncspace-settings-option {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.syncspace-timer-btn:hover,
+.syncspace-playlist-btn:hover,
+.syncspace-nudge-picker-item:hover,
+.syncspace-settings-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Focus timer progress bar animation */
+.syncspace-timer-progress {
+  transition: width 1s linear;
+}
+
+/* Typing indicator dots animation */
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
+/* Entrance animations */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

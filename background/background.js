@@ -382,6 +382,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       case 'toggleFocusTimer':
         syncSpace.broadcastToTabs({ type: 'toggleFocusTimer' });
         return { success: true };
+      case 'togglePlaylist':
+        syncSpace.broadcastToTabs({ type: 'togglePlaylist' });
+        return { success: true };
+      case 'toggleSettings':
+        syncSpace.broadcastToTabs({ type: 'toggleSettings' });
+        return { success: true };
       case 'disconnect':
         await syncSpace.disconnect();
         return { success: true };
