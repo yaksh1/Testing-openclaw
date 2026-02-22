@@ -34,5 +34,8 @@
     "16": "assets/icon16.png",
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' https://cdn.socket.io; object-src 'self'"
   }
 }
