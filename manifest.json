@@ -46,6 +46,6 @@
     "128": "assets/icon128.png"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self' https://cdn.socket.io; object-src 'self'"
+    "extension_pages": "script-src 'self' https://cdn.socket.io/4.5.4/socket.io.min.js; object-src 'self'"
   }
 }
